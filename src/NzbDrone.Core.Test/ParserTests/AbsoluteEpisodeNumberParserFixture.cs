@@ -77,6 +77,7 @@ namespace NzbDrone.Core.Test.ParserTests
         [TestCase("[Jumonji-Giri]_[F-B]_Kagihime_Monogatari_Eikyuu_Alice_Rondo_Ep08_(8246e542).mkv", "Kagihime Monogatari Eikyuu Alice Rondo", 8, 0, 0)]
         [TestCase("Knights of Sidonia - 01 [1080p 10b DTSHD-MA eng sub].mkv", "Knights of Sidonia", 1, 0, 0)]
         [TestCase("Series Title (2010) {01} Episode Title (1).hdtv-720p", "Series Title (2010)", 1, 0, 0)]
+        [TestCase("[HorribleSubs] Shirobako - 20 [720p].mkv", "Shirobako", 20, 0, 0)]
         //[TestCase("", "", 0, 0, 0)]
         public void should_parse_absolute_numbers(string postTitle, string title, int absoluteEpisodeNumber, int seasonNumber, int episodeNumber)
         {
