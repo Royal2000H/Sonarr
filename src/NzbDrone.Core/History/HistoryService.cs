@@ -78,6 +78,51 @@ namespace NzbDrone.Core.History
                 .FirstOrDefault();
         }
 
+        private string FindDownloadId(EpisodeImportedEvent trackedDownload)
+        {
+            _logger.Debug("Trying to find downloadId for {0} from history", trackedDownload.ImportedEpisode.Path);
+
+            var episodeIds = trackedDownload.EpisodeInfo.Episodes.Select(c => c.Id).ToList();
+
+            var allHistory = _historyRepository.FindDownloadHistory(trackedDownload.EpisodeInfo.Series.Id, trackedDownload.ImportedEpisode.Quality);
+
+
+            //Find download related items for these episdoes
+            var episodesHistory = allHistory.Where(h => episodeIds.Contains(h.EpisodeId)).ToList();
+
+            var processedDownloadId = episodesHistory
+                .Where(c => c.EventType != HistoryEventType.Grabbed && c.DownloadId != null)
+                .Select(c => c.DownloadId);
+
+            var stillDownloading = episodesHistory.Where(c => c.EventType == HistoryEventType.Grabbed && !processedDownloadId.Contains(c.DownloadId)).ToList();
+
+            string downloadId = null;
+
+            if (stillDownloading.Any())
+            {
+                foreach (var matchingHistory in trackedDownload.EpisodeInfo.Episodes.Select(e => stillDownloading.Where(c => c.EpisodeId == e.Id).ToList()))
+                {
+                    if (matchingHistory.Count != 1)
+                    {
+                        return null;
+                    }
+
+                    var newDownloadId = matchingHistory.Single().DownloadId;
+
+                    if (downloadId == null || downloadId == newDownloadId)
+                    {
+                        downloadId = newDownloadId;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+            }
+
+            return downloadId;
+        }
+
         public void Handle(EpisodeGrabbedEvent message)
         {
             foreach (var episode in message.Episode.Episodes)
@@ -100,6 +145,11 @@ namespace NzbDrone.Core.History
                 history.Data.Add("AgeHours", message.Episode.Release.AgeHours.ToString());
                 history.Data.Add("PublishedDate", message.Episode.Release.PublishDate.ToString("s") + "Z");
                 history.Data.Add("DownloadClient", message.DownloadClient);
+                history.Data.Add("Size", message.Episode.Release.Size.ToString());
+                history.Data.Add("DownloadUrl", message.Episode.Release.DownloadUrl);
+                history.Data.Add("Guid", message.Episode.Release.Guid);
+                history.Data.Add("TvRageId", message.Episode.Release.TvRageId.ToString());
+                history.Data.Add("Protocol", ((int)message.Episode.Release.DownloadProtocol).ToString());
 
                 if (!message.Episode.ParsedEpisodeInfo.ReleaseHash.IsNullOrWhiteSpace())
                 {
@@ -145,52 +195,6 @@ namespace NzbDrone.Core.History
 
                 _historyRepository.Insert(history);
             }
-        }
-
-
-        private string FindDownloadId(EpisodeImportedEvent trackedDownload)
-        {
-            _logger.Debug("Trying to find downloadId for {0} from history", trackedDownload.ImportedEpisode.Path);
-
-            var episodeIds = trackedDownload.EpisodeInfo.Episodes.Select(c => c.Id).ToList();
-
-            var allHistory = _historyRepository.FindDownloadHistory(trackedDownload.EpisodeInfo.Series.Id, trackedDownload.ImportedEpisode.Quality);
-
-
-            //Find download related items for these episdoes
-            var episodesHistory = allHistory.Where(h => episodeIds.Contains(h.EpisodeId)).ToList();
-
-            var processedDownloadId = episodesHistory
-                .Where(c => c.EventType != HistoryEventType.Grabbed && c.DownloadId != null)
-                .Select(c => c.DownloadId);
-
-            var stillDownloading = episodesHistory.Where(c => c.EventType == HistoryEventType.Grabbed && !processedDownloadId.Contains(c.DownloadId)).ToList();
-
-            string downloadId = null;
-
-            if (stillDownloading.Any())
-            {
-                foreach (var matchingHistory in trackedDownload.EpisodeInfo.Episodes.Select(e => stillDownloading.Where(c => c.EpisodeId == e.Id).ToList()))
-                {
-                    if (matchingHistory.Count != 1)
-                    {
-                        return null;
-                    }
-
-                    var newDownloadId = matchingHistory.Single().DownloadId;
-
-                    if (downloadId == null || downloadId == newDownloadId)
-                    {
-                        downloadId = newDownloadId;
-                    }
-                    else
-                    {
-                        return null;
-                    }
-                }
-            }
-
-            return downloadId;
         }
 
         public void Handle(DownloadFailedEvent message)
