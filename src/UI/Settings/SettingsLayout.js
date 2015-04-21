@@ -228,6 +228,8 @@ module.exports = Marionette.Layout.extend({
 
     _save : function() {
         vent.trigger(vent.Commands.SaveSettings);
+
+        this._updateColorImpairedMode();
     },
 
     _setAdvancedSettingsState : function() {
@@ -247,6 +249,16 @@ module.exports = Marionette.Layout.extend({
             $('body').addClass('show-advanced-settings');
         } else {
             $('body').removeClass('show-advanced-settings');
+        }
+    },
+
+    _updateColorImpairedMode : function() {
+        var checked = this.uiSettings.get('enableColorImpairedMode');
+
+        if (checked) {
+            $('body').addClass('color-impaired-mode');
+        } else {
+            $('body').removeClass('color-impaired-mode');
         }
     }
 });

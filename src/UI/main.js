@@ -11,6 +11,7 @@ var ModalController = require('./Shared/Modal/ModalController');
 var ControlPanelController = require('./Shared/ControlPanel/ControlPanelController');
 var serverStatusModel = require('./System/StatusModel');
 var Tooltip = require('./Shared/Tooltip');
+var UiSettingsModel = require('./Shared/UiSettingsModel');
 
 require('./jQuery/ToTheTop');
 require('./Instrumentation/StringFormat');
@@ -42,6 +43,14 @@ app.addInitializer(function() {
     RouteBinder.bind();
     AppLayout.navbarRegion.show(new NavbarLayout());
     $('body').addClass('started');
+});
+
+
+app.addInitializer(function() {
+    var checked = UiSettingsModel.get('enableColorImpairedMode');
+    if (checked) {
+        $('body').addClass('color-impaired-mode');
+    }
 });
 
 app.addInitializer(function() {
